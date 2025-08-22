@@ -1,15 +1,15 @@
 import express from "express";
-import { 
-  story,
-  getQuestions,
-} from "./controllers/index.js";
+import QuestionGeneratorAgent from "./agents/QuestionGeneratorAgent.js";
 
 
 const app = express();
 
 app.use(express.json());
 
-app.get("/", getQuestions);
+app.get("/", async(req, res) => {
+  const questions = await QuestionGeneratorAgent.generate("Biology", 11, "Evolution", 5);
+  res.json(JSON.parse(questions));
+});
 // app.use("/api", routes);
 
 const PORT = process.env.PORT || 3000;
