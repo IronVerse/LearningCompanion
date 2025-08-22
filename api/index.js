@@ -7,6 +7,8 @@ import {
   story,
   getQuestions,
 } from "./controllers/index.js";
+import QuestionGeneratorAgent from "./agents/QuestionGeneratorAgent.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,7 +22,10 @@ app.use(
   })
 );
 
-app.get("/", getQuestions);
+app.get("/", async(req, res) => {
+  const questions = await QuestionGeneratorAgent.generate("Biology", 11, "Evolution", 5);
+  res.json(JSON.parse(questions));
+});
 // app.use("/api", routes);
 
 app.post('/api/auth/google', login);
