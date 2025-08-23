@@ -3,10 +3,6 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { login, logout, me } from './controllers/authController.js';
 
-import { 
-  story,
-  getQuestions,
-} from "./controllers/index.js";
 import QuestionGeneratorAgent from "./agents/QuestionGeneratorAgent.js";
 
 
