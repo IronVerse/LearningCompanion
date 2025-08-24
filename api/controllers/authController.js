@@ -1,9 +1,11 @@
 // api/controllers/authController.js
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
+import bcrypt from "bcrypt";
+import { openDb } from "../config/db.js";
 import { OAuth2Client } from 'google-auth-library';
-import ReportParserAgent from '../agents/ReportParserAgent';
-import ReportAnalysisAgent from '../agents/ReportAnalysisAgent';
+import ReportParserAgent from '../agents/ReportParserAgent.js';
+import ReportAnalysisAgent from '../agents/ReportAnalysisAgent.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -37,14 +39,48 @@ export function getSessionFromReq(req) {
 
 export const register = async (req, res) => {
 
+  const {
+    firstName,
+    lastName,
+    email,
+    grade,
+    password,
+  } = req.body;
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const db = await openDb();
+
+  const userResult = await db.run(
+    `INSERT INTO Users (Name, Surname, Email, Grade, Password, InitialQuizDone) VALUES (?, ?, ?, ?, ?, 0)`,
+    firstName,
+    lastName,
+    email,
+    grade,
+    hashedPassword
+  );
+
   const { originalname, mimetype, path, buffer } = req.file;
-      let type;
-      if (mimetype === "application/pdf") type = "pdf";
-      else if (mimetype.startsWith("image/")) type = "image";
-      else return res.status(400).json({ error: "Unsupported file type" });
-  
-      const result = await ReportParserAgent.parseReport({ path, type, filename: originalname });
-      const improvementAreas = await ReportAnalysisAgent.analyze(result); 
+  let type;
+  if (mimetype === "application/pdf") type = "pdf";
+  else if (mimetype.startsWith("image/")) type = "image";
+  else return res.status(400).json({ error: "Unsupported file type" });
+
+  const result = await ReportParserAgent.parseReport({ path, type, filename: originalname });
+  const improvementAreas = await ReportAnalysisAgent.analyze(result);
+  for (const subject of result.subjects) {
+
+    if (Array.isArray(improvementAreas.weaknesses) && improvementAreas.weaknesses.includes(subject.subject)) {
+      await db.run(
+        `INSERT INTO Subjects (Name, Percent, NeedsFocus, UserID) VALUES (?, ?, ?, ?)`,
+        subject.subject,         // Name
+        subject.percent ?? null, // Percent (or null if not available)
+        1,                       // NeedsFocus (1 for true)
+        userResult.lastID                   // UserID (make sure you have this variable)
+      );
+    };
+  }
+
+  res.json({isSuccess: true, message: "successfully registered"});
 }
 
 // POST /api/auth/google

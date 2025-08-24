@@ -46,23 +46,24 @@ const App = () => {
 
   const handleRegister = async (userData) => {
     setAuthLoading(true);
+    
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
       setUser({
         name: userData.name,
         email: userData.email,
-        googleProfilePicUrl: `https://placehold.co/40x40/33FF57/FFFFFF?text=${userData.name.charAt(0).toUpperCase()}`
+        googleProfilePicUrl: `https://placehold.co/40x40/33FF57/FFFFFF?text=${userData.firstName.charAt(0).toUpperCase()}`
       });
 
-      const registerResponse = registerUser(userData);
+      const registerResponse = await registerUser(userData);
 
       if (registerResponse.isSuccess) {
+        setAuthLoading(false);
         setCurrentView('dashboard');
       }
+      setAuthLoading(false);
       
     } catch (error) {
       console.error('Registration error:', error);
-    } finally {
       setAuthLoading(false);
     }
   };
