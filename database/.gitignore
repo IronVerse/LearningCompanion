@@ -1,0 +1,6 @@
+# Local database files
+pgdata/
+# Flyway output
+flyway/reports/
+# macOS
+.DS_Store

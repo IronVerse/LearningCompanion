@@ -1,11 +1,17 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-// import { login, logout, me } from './controllers/authController.js';
+import multer from "multer";
+import 'dotenv/config';
+
+import { HttpError } from './utils/errors';
+import asyncHandler from './utils/asyncHandler';
+
+import { login, logout, me } from './controllers/authController.js';
+import { health } from './controllers/healthController';
 
 import QuestionGeneratorAgent from "./agents/QuestionGeneratorAgent.js";
 import ReportParserAgent from "./agents/ReportParserAgent.js";
-import multer from "multer";
 import ReportAnalysisAgent from "./agents/ReportAnalysisAgent.js";
 import { initDb } from "./config/db.js";
 import { getInitialQuiz } from "./controllers/quizController.js";
@@ -58,8 +64,23 @@ app.get("/", async(req, res) => {
 });
 // app.use("/api", routes);
 
-// app.post('/api/auth/google', login);
-// app.post('/api/logout', logout);
-// app.get('/api/me', me);
+app.get('/health', asyncHandler(health));
+
+app.post('/api/auth/google', login);
+app.post('/api/logout', logout);
+app.get('/api/me', me);
+
+// Not found
+app.use((req, res, next) => next(new HttpError(404, 'Not found')));
+
+app.use((err, req, res, next) => {
+  const status = err.status || 500;
+  const payload = { error: { message: err.message || 'Internal Server Error' } };
+  if (err.details) payload.error.details = err.details;
+  if (process.env.NODE_ENV !== 'production') {
+    payload.error.stack = err.stack;
+  }
+  res.status(status).json(payload);
+});
 
 app.listen(PORT, () => console.log(`🚀 Server running on port http://localhost:${PORT}`));
