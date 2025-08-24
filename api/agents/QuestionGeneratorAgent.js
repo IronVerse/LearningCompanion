@@ -18,7 +18,7 @@ class QuestionGeneratorAgent {
 
     Generate ${count} practice questions for Grade ${grade} in ${subject}.
     Topic: ${topic}.
-    Respond only as JSON with keys: question, options, correctAnswer.
+    Respond only as JSON with keys: question, options, correctAnswer, topic.
     `;
     const response = await client.chat.completions.create({
       model: this.model,
@@ -26,7 +26,9 @@ class QuestionGeneratorAgent {
       response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }]
     });
-    return response.choices[0].message.content;
+
+    const cleanedJson = response.choices[0].message.content.replace(/```json|```/g, '').trim();
+    return JSON.parse(cleanedJson);
   }
 }
 
