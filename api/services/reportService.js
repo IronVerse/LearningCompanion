@@ -56,9 +56,29 @@ class ReportService {
           continue;
         }
         const needsFocus = weaknesses.includes(subjectName);
+        // Look up or insert the subject into the subjects catalog.  We need a subject_id to
+        // store in report_results rather than the raw subject name.  First, check if the
+        // subject already exists.
+        let subjectId;
+        const existingSubject = await query(
+          'SELECT subject_id FROM subjects WHERE name = $1',
+          [subjectName]
+        );
+        if (existingSubject.rows.length > 0) {
+          subjectId = existingSubject.rows[0].subject_id;
+        } else {
+          const inserted = await query(
+            'INSERT INTO subjects (name) VALUES ($1) RETURNING subject_id',
+            [subjectName]
+          );
+          subjectId = inserted.rows[0].subject_id;
+        }
+        // Insert the report result using the subjectId.  The subject column is text so
+        // cast the numeric ID to text implicitly via parameter binding.  This allows us
+        // to store the relationship without modifying the schema.
         await query(
-          'INSERT INTO report_results (user_id, subject, percentage, needs_focus) VALUES ($1, $2, $3, $4)',
-          [userId, subjectName, percentValue, needsFocus]
+          'INSERT INTO report_results (user_id, subject_id, percentage, needs_focus) VALUES ($1, $2, $3, $4)',
+          [userId, subjectId, percentValue, needsFocus]
         );
       }
     }

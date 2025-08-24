@@ -2,8 +2,8 @@
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import ReportParserAgent from '../agents/ReportParserAgent';
-import ReportAnalysisAgent from '../agents/ReportAnalysisAgent';
+import ReportParserAgent from '../agents/ReportParserAgent.js';
+import ReportAnalysisAgent from '../agents/ReportAnalysisAgent.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';

@@ -19,14 +19,36 @@ class LearningResourceService {
    * @returns {Promise<{ explanation:string, analogy:string, tips:any }>} The generated resource
    */
   async generateResource(userId, topic, weaknessDescription) {
-    // Generate raw JSON string from the agent
+    // Generate content from the agent.  The agent may return a plain string with
+    // Markdown code fences around the JSON or an already parsed object.  Normalise
+    // the response to a JavaScript object before saving.
     const raw = await LearningResourceAgent.generate(topic, weaknessDescription);
     let resource;
     try {
-      resource = JSON.parse(raw);
+      if (typeof raw === 'string') {
+        // Remove ```json and ``` wrappers if present and trim whitespace
+        let cleaned = raw.replace(/```json|```/g, '').trim();
+        resource = JSON.parse(cleaned);
+      } else {
+        // If the agent already returned an object, use it directly
+        resource = raw;
+      }
     } catch (err) {
-      console.error('Failed to parse learning resource JSON:', raw);
-      throw new Error('Invalid learning resource format returned by agent');
+      // Try to extract the JSON substring between the first and last braces
+      if (typeof raw === 'string') {
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            resource = JSON.parse(match[0]);
+          } catch (err2) {
+            // fall through to error handling below
+          }
+        }
+      }
+      if (!resource) {
+        console.error('Failed to parse learning resource JSON:', raw);
+        throw new Error('Invalid learning resource format returned by agent');
+      }
     }
     // Ensure table exists
     await query(`

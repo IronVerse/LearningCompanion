@@ -45,9 +45,16 @@ class AnswerService {
       let evaluation;
       try {
         const evalResponse = await AnswerEvaluatorAgent.evaluate(stem, selectedAnswer || '', correctAnswer);
-        evaluation = JSON.parse(evalResponse);
+        // The evaluator may wrap its JSON in markdown code fences.  Remove any code fence markers and
+        // surrounding whitespace before parsing.  This makes parsing robust to responses like
+        // ```json\n{"result":"incorrect","feedback":"..."}\n```
+        let cleaned = evalResponse;
+        if (typeof cleaned === 'string') {
+          cleaned = cleaned.replace(/```json|```/g, '').trim();
+        }
+        evaluation = JSON.parse(cleaned);
       } catch (err) {
-        // In the unlikely event that parsing fails, treat as incorrect with generic feedback
+        // If parsing still fails, default to an incorrect result with generic feedback
         evaluation = { result: 'incorrect', feedback: 'There was an error evaluating this answer.' };
       }
       const isCorrect = evaluation.result && evaluation.result.toLowerCase() === 'correct';
@@ -63,6 +70,38 @@ class AnswerService {
         await query(
           'INSERT INTO attempt_selected_options (attempt_id, option_id) VALUES ($1, $2)',
           [attemptId, optionId]
+        );
+      }
+      // Update user_skill_mastery for all topics associated with this question.  We fetch
+      // the topic IDs from question_topics, then adjust the student's mastery up or
+      // down depending on correctness.  Each mastery score is bounded between 0 and 1.
+      const topicsRes = await query(
+        'SELECT topic_id FROM question_topics WHERE question_id = $1',
+        [questionId]
+      );
+      const topicIds = topicsRes.rows.map(r => r.topic_id);
+      for (const tId of topicIds) {
+        // Retrieve existing mastery or use default 0.3
+        const mRes = await query(
+          'SELECT p_mastery FROM user_skill_mastery WHERE user_id = $1 AND topic_id = $2',
+          [userId, tId]
+        );
+        let current = 0.3;
+        if (mRes.rows.length > 0) {
+          const val = parseFloat(mRes.rows[0].p_mastery);
+          if (!isNaN(val)) current = val;
+        }
+        // Simple update rule: increase mastery by 0.1 when correct, decrease when incorrect
+        let newMastery;
+        if (isCorrect) {
+          newMastery = Math.min(1.0, current + 0.1);
+        } else {
+          newMastery = Math.max(0.0, current - 0.1);
+        }
+        // Upsert into user_skill_mastery
+        await query(
+          'INSERT INTO user_skill_mastery (user_id, topic_id, p_mastery, updated_at) VALUES ($1, $2, $3, now())\n           ON CONFLICT (user_id, topic_id) DO UPDATE SET p_mastery = $3, updated_at = now()',
+          [userId, tId, newMastery]
         );
       }
       // If incorrect, collect feedback for the response
