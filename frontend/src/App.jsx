@@ -7,6 +7,7 @@ import QuizPractice from '../../frontend/src/views/QuizPractice.jsx';
 import AddSubjectModal from './components/AddSubjectModal.jsx';
 import GoogleSignIn from './components/GoogleSignIn'; 
 import { LogOut } from 'lucide-react';
+import { registerUser } from './api/backendApi.js';
 
 const App = () => {
   const [currentView, setCurrentView] = useState('login'); 
@@ -52,7 +53,13 @@ const App = () => {
         email: userData.email,
         googleProfilePicUrl: `https://placehold.co/40x40/33FF57/FFFFFF?text=${userData.name.charAt(0).toUpperCase()}`
       });
-      setCurrentView('dashboard');
+
+      const registerResponse = registerUser(userData);
+
+      if (registerResponse.isSuccess) {
+        setCurrentView('dashboard');
+      }
+      
     } catch (error) {
       console.error('Registration error:', error);
     } finally {

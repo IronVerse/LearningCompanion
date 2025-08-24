@@ -1,5 +1,5 @@
 
-const BACKEND_URL = 'http://localhost:4001';
+const BACKEND_URL = 'http://localhost:3000';
 
 export const getExplanationFromBackend = async (topic) => {
   try {
@@ -54,6 +54,35 @@ export const evaluateAnswerOnBackend = async (userAnswer, correctAnswer) => {
     throw error;
   }
 };
+
+export const registerUser = async ({
+  email,
+  password,
+  firstName,
+  lastName,
+  reportCard,
+  grade,
+}) => {
+
+  const response = await fetch(`${BACKEND_URL}/register`, {
+    method: 'POST',
+    body: JSON.stringify({
+      firstName,
+      lastName,
+      password,
+      email,
+      grade,
+      reportCard,
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error);
+  }
+
+  return await response.json();
+}
 
 export const getMotivationFromBackend = async (isCorrect, points, streak) => {
   try {

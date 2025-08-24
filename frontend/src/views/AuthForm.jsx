@@ -3,28 +3,18 @@ import React, { useState } from 'react';
 import { BookOpen, Upload, Loader2 } from 'lucide-react';
 import GoogleSignIn from '../components/GoogleSignIn.jsx'; // Import the GoogleSignIn component
 
-const AuthForm = ({ onLogin, onRegister, isLoading, setUser, setCurrentView, onGoogleSignIn }) => {
+const AuthForm = ({ onLogin, onRegister, isLoading, onGoogleSignIn }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+
   const [selectedGrade, setSelectedGrade] = useState('');
-  const [selectedSubjects, setSelectedSubjects] = useState([]); // Initialize as array
-  const [learningGoal, setLearningGoal] = useState('');
   const [reportCard, setReportCard] = useState(null); // Assuming this is for file upload
   const [error, setError] = useState('');
 
   const grades = ['R', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const availableSubjects = [
-    'Mathematics', 'Physical Sciences', 'Life Sciences', 'English Home Language',
-    'Afrikaans First Additional Language', 'IsiZulu First Additional Language',
-    'IsiXhosa First Additional Language', 'Sepedi First Additional Language',
-    'Setswana First Additional Language', 'Geography', 'History', 'Accounting',
-    'Business Studies', 'Economics', 'Computer Applications Technology (CAT)',
-    'Information Technology (IT)', 'Engineering Graphics & Design (EGD)',
-    'Consumer Studies', 'Visual Arts', 'Dramatic Arts', 'Music',
-    'Agricultural Sciences', 'Religion Studies'
-  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,17 +27,16 @@ const AuthForm = ({ onLogin, onRegister, isLoading, setUser, setCurrentView, onG
       }
       onLogin(email, password); // Pass password if your onLogin expects it
     } else {
-      if (!email || !password || !name || !selectedGrade || selectedSubjects.length === 0 || !learningGoal || !reportCard) {
-        setError('Please fill in all registration fields, select at least one subject, and upload your Term Report.');
+      if (!email || !password || !firstName || !lastName || !selectedGrade || !reportCard) {
+        setError('Please fill in all registration fields, and upload your Term Report.');
         return;
       }
       const userData = {
         email,
         password,
-        name,
+        firstName,
+        lastName,
         grade: selectedGrade,
-        subjects: selectedSubjects,
-        learningGoal,
         reportCard, // This would need to be handled for upload to a backend
         knowledgeGains: 0,
         streak: 0,
@@ -59,11 +48,6 @@ const AuthForm = ({ onLogin, onRegister, isLoading, setUser, setCurrentView, onG
     }
   };
 
-  const handleSubjectToggle = (subject) => {
-    setSelectedSubjects(prev =>
-      prev.includes(subject) ? prev.filter(s => s !== subject) : [...prev, subject]
-    );
-  };
 
   const handleFileChange = (e, field) => {
     if (e.target.files && e.target.files[0] && field === 'reportCard') {
@@ -102,15 +86,31 @@ const AuthForm = ({ onLogin, onRegister, isLoading, setUser, setCurrentView, onG
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
-            <input
-              type="text"
-              placeholder="Your Full Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="auth-input"
-              required
-              disabled={isLoading}
-            />
+            <div>
+
+              <input
+                type="text"
+                style={{
+                  margin: "0px 0px 16px 0px"
+                }}
+                placeholder="First Name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="auth-input"
+                required
+                disabled={isLoading}
+              />
+
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="auth-input"
+                required
+                disabled={isLoading}
+              />
+            </div>
           )}
 
           <input
@@ -147,33 +147,6 @@ const AuthForm = ({ onLogin, onRegister, isLoading, setUser, setCurrentView, onG
                   <option key={grade} value={grade}>{`Grade ${grade}`}</option>
                 ))}
               </select>
-
-              <div>
-                <p className="subjects-grid-label">Select Your Subjects:</p>
-                <div className="subjects-grid">
-                  {availableSubjects.map(subject => (
-                    <button
-                      key={subject}
-                      type="button"
-                      onClick={() => handleSubjectToggle(subject)}
-                      className={`subject-button ${selectedSubjects.includes(subject) ? 'selected' : ''}`}
-                      disabled={isLoading}
-                    >
-                      {subject}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <textarea
-                placeholder="What are your learning goals? (e.g., 'Master Algebra', 'Understand Photosynthesis', 'Prepare for final exams')"
-                value={learningGoal}
-                onChange={(e) => setLearningGoal(e.target.value)}
-                className="auth-textarea"
-                rows={3}
-                required
-                disabled={isLoading}
-              ></textarea>
 
               <label htmlFor="reportCard" className="upload-area">
                 <Upload className="upload-icon" />

@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
+import ReportParserAgent from '../agents/ReportParserAgent';
+import ReportAnalysisAgent from '../agents/ReportAnalysisAgent';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -23,7 +25,7 @@ function setSessionCookie(res, payload) {
   });
 }
 
-function getSessionFromReq(req) {
+export function getSessionFromReq(req) {
   const token = req.cookies?.session;
   if (!token) return null;
   try {
@@ -31,6 +33,18 @@ function getSessionFromReq(req) {
   } catch {
     return null;
   }
+}
+
+export const register = async (req, res) => {
+
+  const { originalname, mimetype, path, buffer } = req.file;
+      let type;
+      if (mimetype === "application/pdf") type = "pdf";
+      else if (mimetype.startsWith("image/")) type = "image";
+      else return res.status(400).json({ error: "Unsupported file type" });
+  
+      const result = await ReportParserAgent.parseReport({ path, type, filename: originalname });
+      const improvementAreas = await ReportAnalysisAgent.analyze(result); 
 }
 
 // POST /api/auth/google
