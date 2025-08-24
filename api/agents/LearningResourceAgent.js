@@ -1,4 +1,4 @@
-import client from "../services/OpenAIClient.js";
+import client from "../services/aiService.js";
 
 class LearningResourceAgent {
   static instance;
