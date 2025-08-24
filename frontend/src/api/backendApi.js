@@ -64,16 +64,17 @@ export const registerUser = async ({
   grade,
 }) => {
 
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("password", password);
+  formData.append("firstName", firstName);
+  formData.append("lastName", lastName);
+  formData.append("grade", grade);
+  formData.append("reportCard", reportCard); 
+
   const response = await fetch(`${BACKEND_URL}/register`, {
     method: 'POST',
-    body: JSON.stringify({
-      firstName,
-      lastName,
-      password,
-      email,
-      grade,
-      reportCard,
-    })
+    body: formData,
   });
 
   if (!response.ok) {
